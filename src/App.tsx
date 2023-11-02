@@ -1,40 +1,95 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import "./App.css";
+import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
+import { useRef, useState } from "react";
 
-function App() {
-  const [count, setCount] = useState(0);
+type MarketPrice = {
+  adjusted_price: number;
+  average_price: number;
+  type_id: number;
+};
 
-  return (
-    <div className="App">
+const App = () => {
+  const [filtredPrices, setFiltredPrices] = useState<MarketPrice[]>([]);
+  const [textareaValue, setTextareaValue] = useState(() => {
+    try {
+      return window.localStorage.getItem("selectedIds") || "";
+    } catch {
+      return "";
+    }
+  });
+  const [csv, setCsv] = useState("");
+
+  const query = useQuery({
+    queryFn: async () => {
+      try {
+        const response = await axios.get<MarketPrice[]>(
+          "https://esi.evetech.net/latest/markets/prices/?datasource=tranquility",
+        );
+        return { prices: response.data, expires: response.headers["expires"] };
+      } catch {
+        return Promise.reject();
+      }
+    },
+    queryKey: [""],
+  });
+
+  const handleChangeTextarea = (e) => {
+    setTextareaValue(e.target.value);
+  };
+
+  const handleClickCopyCSV = () => {
+    if (!query.data) return;
+    if (!textareaValue) return;
+    const value = textareaValue;
+    const ids = value.split(";").map((i) => Number(i)) as number[];
+    const filtredPrices = query.data.prices.filter((item) =>
+      ids.includes(item.type_id),
+    );
+    const csvArray = filtredPrices.map(
+      (item) => `${item.type_id};${item.average_price};${item.adjusted_price}`,
+    );
+    csvArray.unshift(`type_id;average_price;adjusted_price`);
+    const csv = csvArray.join("\n");
+    setCsv(csv);
+    window.localStorage.setItem("selectedIds", textareaValue);
+  };
+
+  if (query.isLoading) return <div>Загрузка...</div>;
+
+  if (query.isError) return <div>Ошибка загрузки</div>;
+
+  if (query.isSuccess)
+    return (
       <div>
-        <a href="https://reactjs.org" target="_blank" rel="noreferrer">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-        <a href="https://vitejs.dev" target="_blank" rel="noreferrer">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
+        <details>
+          <summary>Выгрузить в csv</summary>
+          <p>Нужные id</p>
+          <textarea
+            placeholder="432;234;5345"
+            rows={10}
+            style={{ width: "300px" }}
+            value={textareaValue}
+            onChange={handleChangeTextarea}
+          ></textarea>
+          <div>
+            <button type="button" onClick={handleClickCopyCSV}>
+              Создать csv
+            </button>
+          </div>
+          <textarea
+            rows={10}
+            style={{ width: "300px" }}
+            value={csv}
+            onChange={() => undefined}
+            onClick={(e) => e.currentTarget.select()}
+          ></textarea>
+        </details>
+        <div>Кол-во данных: {query.data.length}</div>
+        <div>expires: {new Date(query.data.expires).toLocaleString()}</div>
       </div>
-      <h1>React + Vite</h1>
-      <h2>On CodeSandbox!</h2>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR.
-        </p>
+    );
 
-        <p>
-          Tip: you can use the inspector button next to address bar to click on
-          components in the preview and open the code in the editor!
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </div>
-  );
-}
+  return <div>asd</div>;
+};
 
 export default App;
