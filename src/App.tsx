@@ -8,8 +8,11 @@ type MarketPrice = {
   type_id: number;
 };
 
+const formatToGoogleSpreadsheet = (value: number) =>
+  String(value).replace(".", ",");
+
 const App = () => {
-  const [filtredPrices, setFiltredPrices] = useState<MarketPrice[]>([]);
+  const csvTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [textareaValue, setTextareaValue] = useState(() => {
     try {
       return window.localStorage.getItem("selectedIds") || "";
@@ -47,9 +50,12 @@ const App = () => {
     const filtredPrices = query.data.prices.filter((item) =>
       ids.includes(item.type_id),
     );
-    const csvArray = filtredPrices.map(
-      (item) => `${item.type_id};${item.average_price};${item.adjusted_price}`,
-    );
+    const csvArray = filtredPrices.map((item) => {
+      const avgPrice = formatToGoogleSpreadsheet(item.average_price || 0);
+      const adjPrice = formatToGoogleSpreadsheet(item.adjusted_price || 0);
+      const id = item.type_id;
+      return `${id};${avgPrice};${adjPrice}`;
+    });
     let csv = "";
     if (csvArray.length) {
       csvArray.unshift(`type_id;average_price;adjusted_price`);
@@ -57,6 +63,10 @@ const App = () => {
       csv = csvArray.join("\n");
     }
     setCsv(csv);
+    if (csvTextareaRef.current) {
+      setTimeout(() => csvTextareaRef.current?.focus(), 0);
+      setTimeout(() => csvTextareaRef.current?.select(), 0);
+    }
   };
 
   if (query.isLoading) return <div>Загрузка...</div>;
@@ -82,6 +92,7 @@ const App = () => {
             </button>
           </div>
           <textarea
+            ref={csvTextareaRef}
             rows={10}
             style={{ width: "300px" }}
             value={csv}
@@ -91,10 +102,17 @@ const App = () => {
         </details>
         <div>Кол-во данных: {query.data.prices.length}</div>
         <div>expires: {new Date(query.data.expires).toLocaleString()}</div>
+        <details>
+          <a href="https://codesandbox.io/p/github/qvazi/market-prices/main">
+            codesandbox
+          </a>
+          <br />
+          <a href="https://github.com/qvazi/market-prices">github</a>
+        </details>
       </div>
     );
 
-  return <div>asd</div>;
+  return null;
 };
 
 export default App;
