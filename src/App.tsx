@@ -33,7 +33,9 @@ const App = () => {
     queryKey: [""],
   });
 
-  const handleChangeTextarea = (e) => {
+  const handleChangeTextarea: React.ChangeEventHandler<HTMLTextAreaElement> = (
+    e,
+  ) => {
     setTextareaValue(e.target.value);
   };
 
@@ -84,7 +86,7 @@ const App = () => {
             onClick={(e) => e.currentTarget.select()}
           ></textarea>
         </details>
-        <div>Кол-во данных: {query.data.length}</div>
+        <div>Кол-во данных: {query.data.prices.length}</div>
         <div>expires: {new Date(query.data.expires).toLocaleString()}</div>
       </div>
     );
