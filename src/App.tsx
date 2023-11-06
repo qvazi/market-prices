@@ -41,7 +41,7 @@ const App = () => {
 
   const handleClickCopyCSV = () => {
     if (!query.data) return;
-    if (!textareaValue) return;
+
     const value = textareaValue;
     const ids = value.split(";").map((i) => Number(i)) as number[];
     const filtredPrices = query.data.prices.filter((item) =>
@@ -50,10 +50,13 @@ const App = () => {
     const csvArray = filtredPrices.map(
       (item) => `${item.type_id};${item.average_price};${item.adjusted_price}`,
     );
-    csvArray.unshift(`type_id;average_price;adjusted_price`);
-    const csv = csvArray.join("\n");
+    let csv = "";
+    if (csvArray.length) {
+      csvArray.unshift(`type_id;average_price;adjusted_price`);
+      window.localStorage.setItem("selectedIds", textareaValue);
+      csv = csvArray.join("\n");
+    }
     setCsv(csv);
-    window.localStorage.setItem("selectedIds", textareaValue);
   };
 
   if (query.isLoading) return <div>Загрузка...</div>;
